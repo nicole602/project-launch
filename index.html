@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProjectLaunch — AI Project Setup Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3d;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --text-muted: #7a7a9a;
+    --text-dim: #4a4a6a;
+    --radius: 12px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-1 { background: rgba(108,99,255,0.08); top: -200px; left: -200px; }
+  .glow-2 { background: rgba(255,101,132,0.06); bottom: -200px; right: -200px; }
+
+  /* Header */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .api-config-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .api-config-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Main layout */
+  main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+  }
+
+  /* Progress bar */
+  .progress-container {
+    width: 100%;
+    max-width: 720px;
+    margin-bottom: 48px;
+  }
+
+  .progress-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface);
+    transition: var(--transition);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-dot.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(108,99,255,0.1);
+    box-shadow: 0 0 20px rgba(108,99,255,0.3);
+  }
+
+  .step-dot.complete {
+    border-color: var(--accent3);
+    background: var(--accent3);
+    color: #000;
+  }
+
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    transition: var(--transition);
+  }
+
+  .step-line.complete { background: var(--accent3); }
+
+  .step-labels {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .step-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    text-align: center;
+    transition: var(--transition);
+    flex: 1;
+  }
+  .step-label:first-child { text-align: left; }
+  .step-label:last-child { text-align: right; }
+  .step-label.active { color: var(--accent); }
+  .step-label.complete { color: var(--accent3); }
+
+  /* Card */
+  .wizard-card {
+    width: 100%;
+    max-width: 720px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wizard-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-header {
+    margin-bottom: 36px;
+  }
+
+  .step-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .step-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .step-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Form elements */
+  .form-group {
+    margin-bottom: 24px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  input[type="text"],
+  input[type="url"],
+  input[type="date"],
+  textarea,
+  select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: var(--transition);
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+
+  select option { background: var(--surface2); }
+
+  /* Team member rows */
+  .team-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .team-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    transition: var(--transition);
+  }
+  .team-row:hover { border-color: var(--accent); }
+
+  .team-row input {
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  .team-row input:focus {
+    background: var(--surface);
+    box-shadow: none;
+    border: 1px solid var(--accent);
+  }
+
+  .remove-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .remove-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(255,101,132,0.1); }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--accent);
+    background: rgba(108,99,255,0.08);
+    border: 1px dashed rgba(108,99,255,0.3);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+    margin-top: 8px;
+  }
+  .add-btn:hover { background: rgba(108,99,255,0.15); border-color: var(--accent); }
+
+  /* Navigation */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 14px 28px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    outline: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(108,99,255,0.3);
+  }
+  .btn-primary:hover { background: #7c74ff; box-shadow: 0 4px 28px rgba(108,99,255,0.5); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-success {
+    background: var(--accent3);
+    color: #000;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(67,233,123,0.3);
+  }
+  .btn-success:hover { background: #5fffb0; box-shadow: 0 4px 28px rgba(67,233,123,0.5); transform: translateY(-1px); }
+
+  /* API Config Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .modal-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .close-modal {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+  .close-modal:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .secure-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Loading state */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.9);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .loading-overlay.open { display: flex; }
+
+  .spinner {
+    width: 56px;
+    height: 56px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .loading-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    text-align: center;
+    min-height: 20px;
+  }
+
+  /* Success state */
+  .success-panel {
+    display: none;
+    text-align: center;
+    padding: 20px 0;
+  }
+  .success-panel.active { display: block; animation: fadeIn 0.5s ease; }
+
+  .success-icon {
+    width: 72px;
+    height: 72px;
+    background: rgba(67,233,123,0.15);
+    border: 2px solid var(--accent3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 24px;
+    box-shadow: 0 0 40px rgba(67,233,123,0.2);
+  }
+
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .success-desc {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .result-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .result-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    text-decoration: none;
+    color: var(--text);
+    transition: var(--transition);
+    gap: 16px;
+  }
+  .result-link:hover { border-color: var(--accent); }
+
+  .result-link-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 2px;
+  }
+  .result-link-url {
+    font-size: 14px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  .result-link-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Meeting notes tab */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 32px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-muted);
+    border: none;
+    background: transparent;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(108,99,255,0.3);
+  }
+
+  /* Info callout */
+  .callout {
+    background: rgba(108,99,255,0.08);
+    border: 1px solid rgba(108,99,255,0.2);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .callout strong { color: var(--accent); }
+
+  /* Review panel */
+  .review-section {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .review-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .review-item {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    gap: 8px;
+  }
+  .review-item-label { color: var(--text-muted); min-width: 100px; flex-shrink: 0; }
+
+  .char-count {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* Error */
+  .error-msg {
+    background: rgba(255,101,132,0.1);
+    border: 1px solid rgba(255,101,132,0.3);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-top: 16px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<!-- Header -->
+<header>
+  <div class="logo">Project<span>Launch</span></div>
+  <button class="api-config-btn" onclick="openModal()">⚙ Configure API Keys</button>
+</header>
+
+<!-- API Config Modal -->
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <button class="close-modal" onclick="closeModal()">×</button>
+    <div class="modal-title">API Configuration</div>
+    <div class="modal-desc">Your keys are stored only in your browser's local storage and never sent anywhere except the respective APIs.</div>
+    
+    <div class="form-group">
+      <label>Anthropic (Claude) API Key</label>
+      <input type="text" id="claudeKey" placeholder="sk-ant-..." />
+      <div class="secure-note">🔒 Stored locally in your browser only</div>
+    </div>
+
+    <div class="form-group">
+      <label>ClickUp API Token</label>
+      <input type="text" id="clickupKey" placeholder="pk_..." />
+      <div class="secure-note">🔒 Stored locally in your browser only</div>
+    </div>
+
+    <div class="form-group">
+      <label>ClickUp Workspace ID</label>
+      <input type="text" id="workspaceId" placeholder="10620777" value="10620777" />
+    </div>
+
+    <button class="btn btn-primary" style="width:100%" onclick="saveKeys()">Save Keys</button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-title">Building your workspace...</div>
+  <div class="loading-status" id="loadingStatus">Analyzing business information...</div>
+</div>
+
+<!-- Main -->
+<main>
+  <div class="progress-container">
+    <div class="progress-steps">
+      <div class="step-item">
+        <div class="step-dot active" id="dot-1">1</div>
+        <div class="step-line" id="line-1"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-2">2</div>
+        <div class="step-line" id="line-2"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-3">3</div>
+        <div class="step-line" id="line-3"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-4">4</div>
+        <div class="step-line" id="line-4"></div>
+      </div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-5">5</div>
+      </div>
+    </div>
+    <div class="step-labels">
+      <span class="step-label active" id="label-1">Business</span>
+      <span class="step-label" id="label-2">Team</span>
+      <span class="step-label" id="label-3">Client</span>
+      <span class="step-label" id="label-4">Project</span>
+      <span class="step-label" id="label-5">Review</span>
+    </div>
+  </div>
+
+  <div class="wizard-card">
+
+    <!-- Step 1: Business Info -->
+    <div class="step-panel active" id="step-1">
+      <div class="step-header">
+        <div class="step-number">Step 01 of 05</div>
+        <div class="step-title">Tell us about the business</div>
+        <div class="step-desc">This helps AI understand the company context when generating project tasks and milestones.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Business Name</label>
+        <input type="text" id="businessName" placeholder="Acme Marketing Agency" />
+      </div>
+
+      <div class="form-group">
+        <label>Website URL <span style="color:var(--text-dim);font-weight:300">(optional — AI will review it)</span></label>
+        <input type="url" id="websiteUrl" placeholder="https://acmeagency.com" />
+      </div>
+
+      <div class="form-group">
+        <label>What does this business do? <span style="color:var(--text-dim);font-weight:300">(brief description)</span></label>
+        <textarea id="businessDesc" rows="4" placeholder="We're a full-service digital marketing agency specializing in B2B SaaS companies. We handle content strategy, paid media, and demand generation..." maxlength="1000"></textarea>
+        <div class="char-count"><span id="businessDescCount">0</span> / 1000</div>
+      </div>
+
+      <div class="nav-buttons">
+        <div></div>
+        <button class="btn btn-primary" onclick="goToStep(2)">Next: Team Members →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Team -->
+    <div class="step-panel" id="step-2">
+      <div class="step-header">
+        <div class="step-number">Step 02 of 05</div>
+        <div class="step-title">Who's on the team?</div>
+        <div class="step-desc">Add employees or contractors. AI uses their roles to intelligently assign tasks.</div>
+      </div>
+
+      <div class="team-list" id="teamList"></div>
+      <button class="add-btn" onclick="addTeamMember()">+ Add team member</button>
+
+      <div class="nav-buttons">
+        <button class="btn btn-ghost" onclick="goToStep(1)">← Back</button>
+        <button class="btn btn-primary" onclick="goToStep(3)">Next: Client Info →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Client Info -->
+    <div class="step-panel" id="step-3">
+      <div class="step-header">
+        <div class="step-number">Step 03 of 05</div>
+        <div class="step-title">Who is the client?</div>
+        <div class="step-desc">A dedicated ClickUp Space will be created for this client.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Client Name or Company</label>
+        <input type="text" id="clientName" placeholder="Bright Horizon Tech" />
+      </div>
+
+      <div class="form-group">
+        <label>Client Industry</label>
+        <input type="text" id="clientIndustry" placeholder="SaaS / B2B Software" />
+      </div>
+
+      <div class="form-group">
+        <label>Client Contact Name</label>
+        <input type="text" id="clientContact" placeholder="Sarah Johnson" />
+      </div>
+
+      <div class="form-group">
+        <label>Notes about this client <span style="color:var(--text-dim);font-weight:300">(optional)</span></label>
+        <textarea id="clientNotes" rows="3" placeholder="Key stakeholder is the CMO. They're data-driven and want weekly reporting. Currently using HubSpot..." maxlength="500"></textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-ghost" onclick="goToStep(2)">← Back</button>
+        <button class="btn btn-primary" onclick="goToStep(4)">Next: Project Details →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Project -->
+    <div class="step-panel" id="step-4">
+      <div class="step-header">
+        <div class="step-number">Step 04 of 05</div>
+        <div class="step-title">What needs to get done?</div>
+        <div class="step-desc">Describe the project and AI will generate phases, milestones, and tasks automatically.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" id="projectName" placeholder="Q3 Website Redesign & SEO Campaign" />
+      </div>
+
+      <div class="form-group">
+        <label>Project Description</label>
+        <textarea id="projectDesc" rows="5" placeholder="Complete website redesign including new copy, design system, and development. Followed by a 90-day SEO content campaign targeting 10 priority keywords. Final deliverable includes monthly analytics reporting..." maxlength="2000"></textarea>
+        <div class="char-count"><span id="projectDescCount">0</span> / 2000</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="form-group">
+          <label>Project Start Date</label>
+          <input type="date" id="startDate" />
+        </div>
+        <div class="form-group">
+          <label>Completion Date</label>
+          <input type="date" id="endDate" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Priority Level</label>
+        <select id="priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-ghost" onclick="goToStep(3)">← Back</button>
+        <button class="btn btn-primary" onclick="goToStep(5)">Next: Review →</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Review & Launch -->
+    <div class="step-panel" id="step-5">
+      <div class="step-header">
+        <div class="step-number">Step 05 of 05</div>
+        <div class="step-title">Review & Launch</div>
+        <div class="step-desc">Confirm everything looks right. AI will generate your full project structure and push it to ClickUp.</div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-section-title">Business</div>
+        <div class="review-item"><span class="review-item-label">Name</span><span id="review-business"></span></div>
+        <div class="review-item"><span class="review-item-label">Website</span><span id="review-website"></span></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-section-title">Team</div>
+        <div id="review-team"></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-section-title">Client</div>
+        <div class="review-item"><span class="review-item-label">Client</span><span id="review-client"></span></div>
+        <div class="review-item"><span class="review-item-label">Industry</span><span id="review-industry"></span></div>
+      </div>
+
+      <div class="review-section">
+        <div class="review-section-title">Project</div>
+        <div class="review-item"><span class="review-item-label">Name</span><span id="review-project"></span></div>
+        <div class="review-item"><span class="review-item-label">Deadline</span><span id="review-deadline"></span></div>
+        <div class="review-item"><span class="review-item-label">Priority</span><span id="review-priority"></span></div>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-ghost" onclick="goToStep(4)">← Back</button>
+        <button class="btn btn-success" onclick="launchProject()">🚀 Build in ClickUp</button>
+      </div>
+    </div>
+
+    <!-- Success Panel -->
+    <div class="success-panel" id="successPanel">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Workspace Created!</div>
+      <div class="success-desc">Your project structure has been built in ClickUp. Share the link below with your client, or open ClickUp to start working.</div>
+
+      <div class="result-links" id="resultLinks"></div>
+
+      <div class="callout">
+        <strong>Next step:</strong> Connect ClickUp to Looker Studio to generate your client dashboard. Open Looker Studio → New Report → ClickUp connector → enter your Space ID shown above.
+      </div>
+
+      <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="addMeetingNotes()">📝 Add Meeting Notes to This Project</button>
+      <button class="btn btn-primary" style="width:100%" onclick="resetWizard()">+ Start Another Client</button>
+    </div>
+
+  </div>
+
+  <!-- Meeting Notes Section (hidden initially) -->
+  <div id="meetingSection" style="display:none;width:100%;max-width:720px;margin-top:24px">
+    <div class="wizard-card">
+      <div class="step-header">
+        <div class="step-number">Add-on Feature</div>
+        <div class="step-title">Meeting Notes → Tasks</div>
+        <div class="step-desc">Paste meeting notes or a transcript. AI will extract action items and add or update tasks in ClickUp.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Paste meeting notes or transcript</label>
+        <textarea id="meetingNotes" rows="10" placeholder="Today we discussed the homepage redesign. Sarah wants the hero section updated by end of month. John will handle the copy revisions. We agreed to push the launch date to October 15th. Also decided to add a blog section — Mike will scope that out this week..."></textarea>
+      </div>
+
+      <div id="meetingError" class="error-msg"></div>
+
+      <div class="nav-buttons">
+        <div></div>
+        <button class="btn btn-primary" onclick="processMeetingNotes()">Extract & Add to ClickUp →</button>
+      </div>
+
+      <div id="meetingResult" style="display:none;margin-top:24px">
+        <div class="callout" id="meetingResultText"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentStep = 1;
+let teamMembers = [];
+let lastCreatedSpaceId = null;
+let lastProjectName = null;
+
+// ============================================================
+// API KEY MANAGEMENT
+// ============================================================
+function openModal() {
+  document.getElementById('apiModal').classList.add('open');
+  document.getElementById('claudeKey').value = localStorage.getItem('claudeKey') || '';
+  document.getElementById('clickupKey').value = localStorage.getItem('clickupKey') || '';
+  document.getElementById('workspaceId').value = localStorage.getItem('workspaceId') || '10620777';
+}
+
+function closeModal() {
+  document.getElementById('apiModal').classList.remove('open');
+}
+
+function saveKeys() {
+  localStorage.setItem('claudeKey', document.getElementById('claudeKey').value.trim());
+  localStorage.setItem('clickupKey', document.getElementById('clickupKey').value.trim());
+  localStorage.setItem('workspaceId', document.getElementById('workspaceId').value.trim());
+  closeModal();
+  showToast('API keys saved ✓');
+}
+
+function getKeys() {
+  return {
+    claude: localStorage.getItem('claudeKey') || '',
+    clickup: localStorage.getItem('clickupKey') || '',
+    workspaceId: localStorage.getItem('workspaceId') || '10620777'
+  };
+}
+
+// ============================================================
+// STEP NAVIGATION
+// ============================================================
+function goToStep(n) {
+  if (n === 2 && !validateStep1()) return;
+  if (n === 3 && !validateStep2()) return;
+  if (n === 4 && !validateStep3()) return;
+  if (n === 5 && !validateStep4()) return;
+
+  document.getElementById(`step-${currentStep}`).classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    const label = document.getElementById(`label-${i}`);
+    const line = document.getElementById(`line-${i}`);
+    dot.classList.remove('active', 'complete');
+    label.classList.remove('active', 'complete');
+    if (line) line.classList.remove('complete');
+
+    if (i < n) {
+      dot.classList.add('complete');
+      dot.innerHTML = '✓';
+      label.classList.add('complete');
+      if (line) line.classList.add('complete');
+    } else if (i === n) {
+      dot.classList.add('active');
+      dot.innerHTML = i;
+      label.classList.add('active');
+    } else {
+      dot.innerHTML = i;
+    }
+  }
+
+  if (n === 5) populateReview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// VALIDATION
+// ============================================================
+function validateStep1() {
+  const name = document.getElementById('businessName').value.trim();
+  if (!name) { alert('Please enter the business name.'); return false; }
+  return true;
+}
+
+function validateStep2() {
+  if (teamMembers.length === 0) { alert('Add at least one team member.'); return false; }
+  for (const m of teamMembers) {
+    if (!m.name.trim() || !m.role.trim()) { alert('Please fill in name and role for all team members.'); return false; }
+  }
+  return true;
+}
+
+function validateStep3() {
+  if (!document.getElementById('clientName').value.trim()) { alert('Please enter the client name.'); return false; }
+  return true;
+}
+
+function validateStep4() {
+  if (!document.getElementById('projectName').value.trim()) { alert('Please enter a project name.'); return false; }
+  if (!document.getElementById('projectDesc').value.trim()) { alert('Please describe the project.'); return false; }
+  if (!document.getElementById('endDate').value) { alert('Please set a completion date.'); return false; }
+  return true;
+}
+
+// ============================================================
+// TEAM MEMBERS
+// ============================================================
+function addTeamMember() {
+  const id = Date.now();
+  teamMembers.push({ id, name: '', role: '' });
+  renderTeamList();
+}
+
+function removeTeamMember(id) {
+  teamMembers = teamMembers.filter(m => m.id !== id);
+  renderTeamList();
+}
+
+function renderTeamList() {
+  const list = document.getElementById('teamList');
+  if (teamMembers.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-dim);font-size:14px;padding:12px 0">No team members added yet.</div>';
+    return;
+  }
+  list.innerHTML = teamMembers.map(m => `
+    <div class="team-row">
+      <input type="text" placeholder="Name" value="${m.name}" 
+        oninput="updateMember(${m.id}, 'name', this.value)" />
+      <input type="text" placeholder="Role / Responsibilities" value="${m.role}"
+        oninput="updateMember(${m.id}, 'role', this.value)" />
+      <button class="remove-btn" onclick="removeTeamMember(${m.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function updateMember(id, field, value) {
+  const m = teamMembers.find(m => m.id === id);
+  if (m) m[field] = value;
+}
+
+// ============================================================
+// REVIEW PANEL
+// ============================================================
+function populateReview() {
+  document.getElementById('review-business').textContent = document.getElementById('businessName').value;
+  document.getElementById('review-website').textContent = document.getElementById('websiteUrl').value || 'Not provided';
+  document.getElementById('review-client').textContent = document.getElementById('clientName').value;
+  document.getElementById('review-industry').textContent = document.getElementById('clientIndustry').value || 'Not specified';
+  document.getElementById('review-project').textContent = document.getElementById('projectName').value;
+  document.getElementById('review-deadline').textContent = document.getElementById('endDate').value;
+  document.getElementById('review-priority').textContent = document.getElementById('priority').value;
+  
+  const teamHtml = teamMembers.map(m => `
+    <div class="review-item">
+      <span class="review-item-label">${m.name}</span>
+      <span>${m.role}</span>
+    </div>
+  `).join('');
+  document.getElementById('review-team').innerHTML = teamHtml;
+}
+
+// ============================================================
+// CLAUDE API — GENERATE PROJECT STRUCTURE
+// ============================================================
+async function generateProjectStructure(data) {
+  const keys = getKeys();
+  if (!keys.claude) throw new Error('Claude API key not configured. Click ⚙ Configure API Keys above.');
+
+  const teamStr = data.team.map(m => `- ${m.name}: ${m.role}`).join('\n');
+
+  const prompt = `You are a project management expert. Generate a detailed, phase-based project structure for ClickUp based on the following information.
+
+BUSINESS: ${data.businessName}
+BUSINESS DESCRIPTION: ${data.businessDesc || 'Not provided'}
+CLIENT: ${data.clientName} (${data.clientIndustry || 'Industry not specified'})
+CLIENT NOTES: ${data.clientNotes || 'None'}
+PROJECT: ${data.projectName}
+PROJECT DESCRIPTION: ${data.projectDesc}
+START DATE: ${data.startDate || 'ASAP'}
+END DATE: ${data.endDate}
+PRIORITY: ${data.priority}
+TEAM:
+${teamStr}
+
+Generate a project structure with 3-5 phases. Each phase should have 3-6 tasks. Assign tasks to team members based on their roles. Set realistic due dates between start and end date.
+
+Return ONLY valid JSON in this exact format, no other text:
+{
+  "folders": [
+    {
+      "name": "Phase Name",
+      "description": "What this phase accomplishes",
+      "lists": [
+        {
+          "name": "List/Category Name",
+          "tasks": [
+            {
+              "name": "Task name",
+              "description": "What needs to be done and why",
+              "assignee": "Team member name exactly as provided",
+              "due_date": "YYYY-MM-DD",
+              "priority": "normal|high|urgent",
+              "is_milestone": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': keys.claude, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(`Claude API error: ${err.error?.message || response.statusText}`);
+  }
+
+  const result = await response.json();
+  const text = result.content[0].text.trim();
+  
+  try {
+    const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    throw new Error('Failed to parse AI response. Please try again.');
+  }
+}
+
+// ============================================================
+// CLICKUP API
+// ============================================================
+async function clickupRequest(path, method = 'GET', body = null) {
+  const keys = getKeys();
+  if (!keys.clickup) throw new Error('ClickUp API token not configured.');
+
+  const opts = {
+    method,
+    headers: { 'Authorization': keys.clickup, 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const response = await fetch(`https://api.clickup.com/api/v2${path}`, opts);
+  
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`ClickUp API error: ${err.err || response.statusText} (${response.status})`);
+  }
+  return response.json();
+}
+
+async function createClickUpWorkspace(projectStructure, data) {
+  const keys = getKeys();
+  setLoadingStatus('Creating client Space in ClickUp...');
+
+  // Create Space
+  const space = await clickupRequest(`/team/${keys.workspaceId}/space`, 'POST', {
+    name: data.clientName,
+    multiple_assignees: true,
+    features: {
+      due_dates: { enabled: true, start_date: true },
+      priorities: { enabled: true },
+      assignees: { multiple_assignees: true }
+    }
+  });
+
+  const spaceId = space.id;
+  lastCreatedSpaceId = spaceId;
+
+  // Get team members from ClickUp to map names to IDs
+  setLoadingStatus('Mapping team members...');
+  let memberMap = {};
+  try {
+    const members = await clickupRequest(`/team/${keys.workspaceId}/member`);
+    if (members.team?.members) {
+      members.team.members.forEach(m => {
+        memberMap[m.user.username?.toLowerCase()] = m.user.id;
+        memberMap[m.user.email?.toLowerCase()] = m.user.id;
+        const fullName = m.user.username || '';
+        memberMap[fullName.toLowerCase()] = m.user.id;
+      });
+    }
+  } catch(e) {
+    console.warn('Could not fetch members, tasks will be unassigned:', e);
+  }
+
+  // Create folders and lists
+  for (let fi = 0; fi < projectStructure.folders.length; fi++) {
+    const folder = projectStructure.folders[fi];
+    setLoadingStatus(`Creating phase: ${folder.name}...`);
+
+    const createdFolder = await clickupRequest(`/space/${spaceId}/folder`, 'POST', {
+      name: folder.name
+    });
+
+    for (const list of folder.lists) {
+      const createdList = await clickupRequest(`/folder/${createdFolder.id}/list`, 'POST', {
+        name: list.name,
+        due_date: data.endDate ? new Date(data.endDate).getTime() : null,
+        priority: data.priority === 'urgent' ? 1 : data.priority === 'high' ? 2 : 3
+      });
+
+      // Create tasks
+      for (const task of list.tasks) {
+        const taskBody = {
+          name: task.name,
+          description: task.description,
+          priority: task.priority === 'urgent' ? 1 : task.priority === 'high' ? 2 : 3,
+          due_date: task.due_date ? new Date(task.due_date).getTime() : null,
+        };
+
+        // Try to assign
+        const assigneeName = task.assignee?.toLowerCase();
+        if (assigneeName && memberMap[assigneeName]) {
+          taskBody.assignees = [memberMap[assigneeName]];
+        }
+
+        await clickupRequest(`/list/${createdList.id}/task`, 'POST', taskBody);
+      }
+    }
+  }
+
+  return spaceId;
+}
+
+// ============================================================
+// LAUNCH
+// ============================================================
+async function launchProject() {
+  const keys = getKeys();
+  
+  if (!keys.claude || !keys.clickup) {
+    showError('errorMsg', 'Please configure your API keys first. Click ⚙ Configure API Keys at the top.');
+    return;
+  }
+
+  const data = {
+    businessName: document.getElementById('businessName').value.trim(),
+    businessDesc: document.getElementById('businessDesc').value.trim(),
+    websiteUrl: document.getElementById('websiteUrl').value.trim(),
+    team: teamMembers,
+    clientName: document.getElementById('clientName').value.trim(),
+    clientIndustry: document.getElementById('clientIndustry').value.trim(),
+    clientContact: document.getElementById('clientContact').value.trim(),
+    clientNotes: document.getElementById('clientNotes').value.trim(),
+    projectName: document.getElementById('projectName').value.trim(),
+    projectDesc: document.getElementById('projectDesc').value.trim(),
+    startDate: document.getElementById('startDate').value,
+    endDate: document.getElementById('endDate').value,
+    priority: document.getElementById('priority').value
+  };
+
+  lastProjectName = data.projectName;
+
+  showLoading(true);
+
+  try {
+    setLoadingStatus('Analyzing business and project information...');
+    const structure = await generateProjectStructure(data);
+
+    setLoadingStatus('Creating ClickUp workspace...');
+    const spaceId = await createClickUpWorkspace(structure, data);
+
+    showLoading(false);
+    showSuccess(spaceId, data);
+
+  } catch(err) {
+    showLoading(false);
+    showError('errorMsg', err.message);
+    console.error(err);
+  }
+}
+
+function showSuccess(spaceId, data) {
+  // Hide all steps
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  
+  const successPanel = document.getElementById('successPanel');
+  successPanel.classList.add('active');
+
+  const clickupUrl = `https://app.clickup.com/${getKeys().workspaceId}/v/s/${spaceId}`;
+
+  document.getElementById('resultLinks').innerHTML = `
+    <a class="result-link" href="${clickupUrl}" target="_blank">
+      <div>
+        <div class="result-link-label">ClickUp Space</div>
+        <div class="result-link-url">${clickupUrl}</div>
+      </div>
+      <div class="result-link-icon">↗</div>
+    </a>
+    <div class="result-link" style="cursor:default">
+      <div>
+        <div class="result-link-label">Space ID (for Looker Studio)</div>
+        <div class="result-link-url" style="color:var(--accent3)">${spaceId}</div>
+      </div>
+      <button onclick="navigator.clipboard.writeText('${spaceId}');showToast('Copied!')" 
+        style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;flex-shrink:0">
+        Copy
+      </button>
+    </div>
+  `;
+}
+
+// ============================================================
+// MEETING NOTES
+// ============================================================
+function addMeetingNotes() {
+  document.getElementById('meetingSection').style.display = 'block';
+  document.getElementById('meetingSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function processMeetingNotes() {
+  const keys = getKeys();
+  const notes = document.getElementById('meetingNotes').value.trim();
+  
+  if (!notes) { showError('meetingError', 'Please paste meeting notes first.'); return; }
+  if (!keys.claude) { showError('meetingError', 'Claude API key required.'); return; }
+  if (!lastCreatedSpaceId) { showError('meetingError', 'No active project found. Please create a project first.'); return; }
+
+  const btn = document.querySelector('#meetingSection .btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  try {
+    const teamStr = teamMembers.map(m => `${m.name}: ${m.role}`).join(', ');
+    
+    const prompt = `Extract action items from these meeting notes and format them as ClickUp tasks.
+
+PROJECT: ${lastProjectName}
+TEAM: ${teamStr}
+
+MEETING NOTES:
+${notes}
+
+Return ONLY valid JSON, no other text:
+{
+  "summary": "One sentence summary of what was discussed",
+  "tasks": [
+    {
+      "name": "Task name",
+      "description": "Details",
+      "assignee": "Name from team list or null",
+      "due_date": "YYYY-MM-DD or null",
+      "priority": "normal|high|urgent"
+    }
+  ]
+}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': keys.claude, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const result = await response.json();
+    const text = result.content[0].text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(text);
+
+    // Find first list in space to add tasks to
+    const folders = await clickupRequest(`/space/${lastCreatedSpaceId}/folder`);
+    let targetListId = null;
+
+    if (folders.folders?.length > 0) {
+      const lists = await clickupRequest(`/folder/${folders.folders[0].id}/list`);
+      if (lists.lists?.length > 0) targetListId = lists.lists[0].id;
+    }
+
+    if (!targetListId) {
+      // Create a meeting notes list
+      const newList = await clickupRequest(`/space/${lastCreatedSpaceId}/list`, 'POST', { name: 'Meeting Action Items' });
+      targetListId = newList.id;
+    }
+
+    // Add tasks
+    for (const task of parsed.tasks) {
+      await clickupRequest(`/list/${targetListId}/task`, 'POST', {
+        name: task.name,
+        description: task.description,
+        priority: task.priority === 'urgent' ? 1 : task.priority === 'high' ? 2 : 3,
+        due_date: task.due_date ? new Date(task.due_date).getTime() : null
+      });
+    }
+
+    document.getElementById('meetingResult').style.display = 'block';
+    document.getElementById('meetingResultText').innerHTML = `
+      <strong>✓ ${parsed.tasks.length} tasks added to ClickUp</strong><br>
+      <em>${parsed.summary}</em>
+    `;
+    document.getElementById('meetingNotes').value = '';
+
+  } catch(err) {
+    showError('meetingError', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Extract & Add to ClickUp →';
+  }
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('open', show);
+}
+
+function setLoadingStatus(msg) {
+  document.getElementById('loadingStatus').textContent = msg;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 8000);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:999;animation:fadeIn 0.2s ease';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function resetWizard() {
+  currentStep = 1;
+  teamMembers = [];
+  lastCreatedSpaceId = null;
+  lastProjectName = null;
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('successPanel').classList.remove('active');
+  document.getElementById('step-1').classList.add('active');
+  document.getElementById('meetingSection').style.display = 'none';
+  
+  // Reset form fields
+  ['businessName','websiteUrl','businessDesc','clientName','clientIndustry','clientContact',
+   'clientNotes','projectName','projectDesc','startDate','endDate'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('priority').value = 'normal';
+  renderTeamList();
+  goToStep(1);
+}
+
+// Character counters
+document.getElementById('businessDesc').addEventListener('input', function() {
+  document.getElementById('businessDescCount').textContent = this.value.length;
+});
+document.getElementById('projectDesc').addEventListener('input', function() {
+  document.getElementById('projectDescCount').textContent = this.value.length;
+});
+
+// Initialize
+renderTeamList();
+addTeamMember(); // Start with one empty row
+
+// Auto-open config if no keys
+window.addEventListener('load', () => {
+  const keys = getKeys();
+  if (!keys.claude || !keys.clickup) {
+    setTimeout(openModal, 800);
+  }
+});
+</script>
+</body>
+</html>
