@@ -1166,7 +1166,7 @@ Return ONLY valid JSON in this exact format, no other text:
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-claude-key': keys.claude },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     })
@@ -1411,7 +1411,7 @@ Return ONLY valid JSON, no other text:
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-claude-key': keys.claude },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }]
       })
